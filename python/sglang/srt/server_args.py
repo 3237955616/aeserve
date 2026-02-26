@@ -66,7 +66,6 @@ class ServerArgs:
     max_total_tokens: Optional[int] = None
     max_mem_usage: Optional[float] = None
     max_memory_pool_size: Optional[float] = None
-    max_gpu_memory_size: float = 80.0
     max_num_reqs: int = 512
     chunked_prefill_size: int = 8192
     max_prefill_tokens: int = 16384
@@ -453,12 +452,6 @@ class ServerArgs:
             type=float,
             default=ServerArgs.max_memory_pool_size,
             help="The maximum memory that the memory pool can use. If not specified, it will be automatically calculated based on the mem-fraction-static.",
-        )
-        parser.add_argument(
-            "--max-gpu-memory-size",
-            type=float,
-            default=ServerArgs.max_gpu_memory_size,
-            help="The maximum memory that the GPU can use.",
         )
         parser.add_argument(
             "--max_num_reqs",

@@ -309,39 +309,39 @@ class SingleModelRunner(BaseModelRunner):
         self, memory_pool_size: float, restart_token_to_kv_pool: bool
     ):
         if memory_pool_size is not None:
-            self.token_num_boundary = self._get_num_tokens(memory_pool_size) # 应用层
-            self.max_num_reqs = self._get_max_num_reqs(self.token_num_boundary)
+            self.max_total_num_tokens = self._get_max_total_num_tokens(memory_pool_size)
+            self.max_num_reqs = self._get_max_num_reqs(self.max_total_num_tokens)
             logger.info(
                 f"New memory pool size: {memory_pool_size:.2f} GB, "
-                f"max_total_num_tokens={self.token_num_boundary}, "
+                f"max_total_num_tokens={self.max_total_num_tokens}, "
                 f"max_num_reqs={self.max_num_reqs}"
             )
 
         if self.server_args.enable_elastic_memory:
             self.memory_pool_info = self._reinit_and_update_memory_pool(
-                self.max_num_reqs, self.token_num_boundary, restart_token_to_kv_pool
+                self.max_num_reqs, self.max_total_num_tokens, restart_token_to_kv_pool
             )
         else:
             self.memory_pool_info = self._init_memory_pool(
-                self.max_num_reqs, self.token_num_boundary
+                self.max_num_reqs, self.max_total_num_tokens
             )
 
     def resize_memory_pool(self, new_memory_pool_size: Optional[float] = None):
         if self.server_args.enable_elastic_memory:
             if new_memory_pool_size is not None:
-                self.token_num_boundary = max(self._get_num_tokens(new_memory_pool_size), self.token_num_boundary)
-                self.max_num_reqs = self._get_max_num_reqs(self.token_num_boundary)
-                actual_memory = self.token_num_boundary * self.cell_size // (1 << 30)
+                self.max_total_num_tokens = max(self._get_max_total_num_tokens(new_memory_pool_size), self.max_total_num_tokens)
+                self.max_num_reqs = self._get_max_num_reqs(self.max_total_num_tokens)
+                actual_memory = self.max_total_num_tokens * self.cell_size // (1 << 30)
                 logger.info(
                     f"New memory pool size: {new_memory_pool_size:.2f} GB, "
-                    f"max_total_num_tokens={self.token_num_boundary}, "
+                    f"max_total_num_tokens={self.max_total_num_tokens}, "
                     f"max_num_reqs={self.max_num_reqs}, "
                     f"actual target memory pool size={actual_memory:.2f} GB"
                 )
             else:
-                self.token_num_boundary = self.token_to_kv_pool.size
-                self.max_num_reqs = self._get_max_num_reqs(self.token_num_boundary)
-            success = self.token_to_kv_pool.update_size(self.token_num_boundary)
+                self.max_total_num_tokens = self.token_to_kv_pool.size
+                self.max_num_reqs = self._get_max_num_reqs(self.max_total_num_tokens)
+            success = self.token_to_kv_pool.update_size(self.max_total_num_tokens)
             return success
         else:
             raise ValueError("Only elastic memory is supported for resize_memory_pool")
@@ -522,21 +522,20 @@ class SingleModelRunner(BaseModelRunner):
         self.cell_size = self._get_cell_size()
 
         init_memory_pool_size = self._get_init_memory_pool_size()
-        self.token_num_boundary = self._get_num_tokens(init_memory_pool_size) # 应用层，分配边界
-        self.max_num_reqs = self._get_max_num_reqs(self.token_num_boundary)
+        self.max_total_num_tokens = self._get_max_total_num_tokens(
+            init_memory_pool_size
+        )
+        self.max_num_reqs = self._get_max_num_reqs(self.max_total_num_tokens)
 
-        self.max_alloc_token_num = self._get_num_tokens(self.server_args.max_gpu_memory_size) # 系统层，虚拟地址空间
-        
         logger.info(
             f"Init memory pool size: {init_memory_pool_size:.2f} GB, "
-            f"max_total_num_tokens: {self.token_num_boundary}, "
+            f"max_total_num_tokens: {self.max_total_num_tokens}, "
             f"max_num_reqs: {self.max_num_reqs}, "
             f"cell_size: {self.cell_size:.2f} bytes, {self.cell_size / 1024 ** 2:.2f} MB, "
             f"kv_cache_dtype: {self.kv_cache_dtype}"
         )
         memory_pool_info = self._init_memory_pool(
-            self.max_num_reqs, self.token_num_boundary, init_req_to_token_only,
-            max_alloc_num_tokens=self.max_alloc_token_num
+            self.max_num_reqs, self.max_total_num_tokens, init_req_to_token_only
         )
         return memory_pool_info
 

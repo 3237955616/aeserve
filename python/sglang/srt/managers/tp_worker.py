@@ -90,9 +90,6 @@ class BaseTpModelWorker:
     def get_tp_cpu_group(self):
         return self.model_runner.tp_group.cpu_group
 
-    def get_cell_size(self):
-        return self.model_runner.cell_size
-    
     def get_memory_pool(self):
         return (
             self.model_runner.req_to_token_pool,

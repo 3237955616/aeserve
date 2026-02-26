@@ -240,9 +240,9 @@ class GlobalController:
                 except Exception as e:
                     logger.error(f"Error enqueuing request: {recv_req}, recv_req.model: {recv_req.model}, self.model_queues.keys(): {self.model_queues.keys()}")                    
             elif isinstance(recv_req, GetMemoryUsageReqOutput):
+                memory_usage = recv_req.memory_usage
                 for instance in self.model_instance_state_dict[recv_req.model_name]:
-                    instance.update_memory_usage(recv_req.memory_usage)
-                    instance.set_cell_size(recv_req.cell_size)
+                    instance.update_memory_usage(memory_usage)
             elif isinstance(recv_req, UpdateModelTput):
                 # Update the token throughput for the model
                 model_name = recv_req.model_name

@@ -103,7 +103,8 @@ class RequestQueueManager:
                 input_len = req_wrapper.req.prompt_len
                 if input_len is not None: # 测试请求不计数
                     model_input_lens_dict[req_wrapper.model_name].append(input_len)
-                    heapq.heappush(self.model_queues[req_wrapper.model_name], req_wrapper)
+                    # heapq.heappush(self.model_queues[req_wrapper.model_name], req_wrapper)
+                    self.model_queues[req_wrapper.model_name].append(req_wrapper)
                                 
     def admission_control(
         self,
@@ -134,7 +135,8 @@ class RequestQueueManager:
                 retracted_req_warppers = []
                 # 添加正常请求
                 while queue and availiable_memory > 0:
-                    req_wrapper = heapq.heappop(queue)
+                    # req_wrapper = heapq.heappop(queue)
+                    req_wrapper = queue.pop(0)
                     profiled_cells = self._get_request_resources(req_wrapper.req)
                     if availiable_memory >= profiled_cells:
                         admitted_reqs[model_name].append(req_wrapper.req)
@@ -143,8 +145,9 @@ class RequestQueueManager:
                     else:
                         retracted_req_warppers.append(req_wrapper)
                         log_info(f"😢 Resource limited, available mem: {availiable_memory}GB, needed size: {profiled_cells}GB")
+                    break
                 queue.extend(retracted_req_warppers)
-                heapq.heapify(queue)
+                # heapq.heapify(queue)
         return admitted_reqs
 
     def _get_request_resources(self, req: GenerateReqInput) -> float:

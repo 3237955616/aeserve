@@ -96,16 +96,16 @@ if __name__ == "__main__":
     # }
 
     model_names_to_model_paths = {
-        "model_1": "meta-llama/Llama-3.1-8B",
-        "model_2": "mistralai/Mistral-7B-Instruct-v0.2",
-        "model_3": "meta-llama/Llama-3.2-3B",
-        "model_4": "meta-llama/Llama-3.2-3B",
+        # "model_1": "meta-llama/Llama-2-7b-hf",
+        # "model_2": "meta-llama/Llama-2-7b-hf",
+        "model_1": "meta-llama/Llama-3.3-70B-Instruct",
+        "model_2": "meta-llama/Llama-3.3-70B-Instruct",
     }
     model_names_to_req_rates = {
         "model_1": 199,
         "model_2": 262,
-        "model_3": 22,
-        "model_4": 31,
+        # "model_3": 22,
+        # "model_4": 31,
     }
 
     model_name_to_kv_pool_size = get_static_memory_pool_size(

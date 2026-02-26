@@ -158,10 +158,12 @@ class BaseModelRunner:
 
         # Init components
         min_per_gpu_memory = self.init_torch_distributed()
-        self.max_mem_usage = self._get_max_mem_usage(min_per_gpu_memory, server_args.max_mem_usage)
-        # 启动模型时需保证启动后仍有空间，AEServe不需要
-        # self.min_reserve_mem = self.max_mem_usage * (1 - server_args.mem_fraction_static) * 0.8
-        self.min_reserve_mem = 0
+        self.max_mem_usage = self._get_max_mem_usage(
+            min_per_gpu_memory, server_args.max_mem_usage
+        )
+        self.min_reserve_mem = (
+            self.max_mem_usage * (1 - server_args.mem_fraction_static) * 0.8
+        )  # leave room for other model's activations
         self.sampler = Sampler()
 
         atexit.register(self.cleanup)
@@ -458,15 +460,16 @@ class BaseModelRunner:
         max_num_token = int(rest_memory * (1 << 30) // self.cell_size)
         return max_num_token
 
-    def _get_num_tokens(self, memory_pool_size: float):
+    def _get_max_total_num_tokens(self, memory_pool_size: float):
         """使用预估请求数，计算可运行token数"""
         # TODO: 针对模型修改最大请求
-        approx_max_num_reqs = 512 if self.server_args.max_num_reqs is None else self.server_args.max_num_reqs
+        approx_max_num_reqs = self.server_args.max_num_reqs
+        approx_max_num_reqs = 512 if approx_max_num_reqs is None else approx_max_num_reqs
         approx_req_to_token_pool_size = (
-            (approx_max_num_reqs + 1) *                 # 请求数量
-            (self.model_config.context_len + 4) *       # 请求长度
-            torch._utils._element_size(torch.int32) /   # 元素大小
-            (1 << 30)                                   # 单位GB
+            (approx_max_num_reqs + 1)                   # 请求数量
+            * (self.model_config.context_len + 4)       # 请求长度
+            * torch._utils._element_size(torch.int32)   # 元素大小
+            / (1 << 30)                                 # 单位GB
         )
         logger.info(f"Max context length: {self.model_config.context_len}, request to token size: {approx_req_to_token_pool_size} GB")
         token_to_kv_pool_size = memory_pool_size - approx_req_to_token_pool_size
@@ -512,10 +515,10 @@ class BaseModelRunner:
     def _init_memory_pool(
         self,
         max_num_reqs: int,
-        token_num_boundary: int, # 应用层
+        max_total_num_tokens: int,
         init_req_to_token_only: bool = False,
         max_context_len: Optional[int] = None,
-        max_alloc_num_tokens: Optional[int] = None # 系统层
+        max_alloc_num_tokens: Optional[int] = None
     ):
         tic = time.time()
         if max_context_len is None:
@@ -544,7 +547,7 @@ class BaseModelRunner:
             return memory_pool_info
         if (self.model_config.attention_arch == AttentionArch.MLA and not self.server_args.disable_mla):
             self.token_to_kv_pool = MLATokenToKVPool(
-                token_num_boundary,
+                max_total_num_tokens,
                 dtype=self.kv_cache_dtype,
                 kv_lora_rank=self.model_config.kv_lora_rank,
                 qk_rope_head_dim=self.model_config.qk_rope_head_dim,
@@ -555,7 +558,7 @@ class BaseModelRunner:
             )
         elif self.server_args.enable_double_sparsity:
             self.token_to_kv_pool = DoubleSparseTokenToKVPool(
-                token_num_boundary,
+                max_total_num_tokens,
                 dtype=self.kv_cache_dtype,
                 head_num=self.model_config.get_num_kv_heads(self.tp_size),
                 head_dim=self.model_config.head_dim,
@@ -568,8 +571,8 @@ class BaseModelRunner:
         else:
             # NOTE: 分离了初始分配和初始管理器
             self.token_to_kv_pool = MHATokenToKVPool(
-                size=token_num_boundary,
-                max_size=max_alloc_num_tokens if max_alloc_num_tokens is not None else token_num_boundary,
+                size=max_total_num_tokens,
+                max_size=max_alloc_num_tokens if max_alloc_num_tokens is not None else max_total_num_tokens,
                 dtype=self.kv_cache_dtype,
                 head_num=self.model_config.get_num_kv_heads(self.tp_size),
                 head_dim=self.model_config.head_dim,

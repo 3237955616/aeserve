@@ -54,7 +54,7 @@ class ModelConfig:
     def __post_init__(self):
         if self.tokenizer_path is None:
             self.tokenizer_path = self.model_path
-    
+
     def get_instance_configs(self) -> List["InstanceConfig"]:
         return [
             InstanceConfig(

@@ -644,8 +644,7 @@ class Scheduler:
             elif isinstance(recv_req, GetMemoryUsageReq):
                 rid = recv_req.rid
                 memory_usage = self.get_memory_usage()
-                cell_size = self.get_cell_size()
-                self.send_to_detokenizer.send_pyobj(GetMemoryUsageReqOutput(rid, self.model_name, memory_usage, cell_size))
+                self.send_to_detokenizer.send_pyobj(GetMemoryUsageReqOutput(rid, self.model_name, memory_usage))
             elif isinstance(recv_req, ActivateReqInput):
                 recv_activate_reqs.append(recv_req)
             elif isinstance(recv_req, DeactivateReqInput):
@@ -1404,17 +1403,13 @@ class Scheduler:
         self.tree_cache_metrics = {"total": 0, "hit": 0}
         self.policy = SchedulePolicy(self.schedule_policy, self.tree_cache)
 
-    def get_cell_size(self) -> float:
-        return self.tp_worker.get_cell_size()
-    
     def get_memory_usage(self) -> MemoryUsage:
         return self.tp_worker.get_memory_usage()
     
     def update_memory_usage(self):
         memory_usage = self.get_memory_usage()
         memory_usage.token_to_kv_pool_memory = (1 - self.rem_tokens / self.max_total_num_tokens)
-        cell_size = self.get_cell_size()
-        self.send_to_controller.send_pyobj(GetMemoryUsageReqOutput("", self.model_name, memory_usage, cell_size))
+        self.send_to_controller.send_pyobj(GetMemoryUsageReqOutput("", self.model_name, memory_usage))
 
     def resize_mem_pool(self, recv_req: ResizeMemPoolReqInput) -> bool:
         """调整内存池大小
@@ -1456,7 +1451,6 @@ class Scheduler:
                     instance_idx=recv_req.instance_idx,
                     success=False, # 启动重复
                     memory_usage=self.get_memory_usage(),
-                    cell_size=self.get_cell_size()
                 )
                 self.send_to_detokenizer.send_pyobj(activate_req_output)
                 self.redis_client.send_pyobj(
@@ -1508,7 +1502,6 @@ class Scheduler:
                 instance_idx=recv_req.instance_idx,
                 success=True,
                 memory_usage=self.get_memory_usage(),
-                cell_size=self.get_cell_size()
             )
             self.send_to_detokenizer.send_pyobj(activate_req_output) # 初始化detokenizer
             self.redis_client.send_pyobj(

@@ -153,7 +153,7 @@ class WorkerPoolModelRunner(BaseModelRunner):
         self.max_context_len = self._get_max_context_len()
         self.memory_pool_info = self._init_memory_pool(
             max_num_reqs=self.max_num_reqs,
-            token_num_boundary=self.max_total_num_tokens,
+            max_total_num_tokens=self.max_total_num_tokens,
             init_req_to_token_only=True,
             max_context_len=self.max_context_len,
         )
@@ -174,7 +174,7 @@ class WorkerPoolModelRunner(BaseModelRunner):
     def _get_max_num_reqs(self):
         return 512  # TODO: get from logs
 
-    def _get_num_tokens(self):
+    def _get_max_total_num_tokens(self):
         # max_num_token = int(self.virtual_memory_size_gb * (1 << 30) // self.cell_size)
         cell_size_per_layer = self.cell_size // self.model_config.num_hidden_layers // 2
         virtual_page_size = 2 * 1024 * 1024 # 2MB
@@ -207,7 +207,7 @@ class WorkerPoolModelRunner(BaseModelRunner):
         self.dtype = self.model_config.dtype
         self.kv_cache_dtype = self._get_kv_cache_dtype()
         self.cell_size = self._get_cell_size()
-        self.max_total_num_tokens = self._get_num_tokens()
+        self.max_total_num_tokens = self._get_max_total_num_tokens()
         self.cpu_model_ref = self._get_cpu_model_ref(model_name)
 
     def init_token_to_kv_pool(self):

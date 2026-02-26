@@ -22,7 +22,6 @@ class ModelInstanceState:
     state: ModelState
     memory_usage: MemoryUsage
     init_memory_pool_size: float
-    cell_size: float = None
     num_vio_reqs: int = 0 # num of violated request in current window
     # for priority scheduling
     req_freq: float = float("-inf")
@@ -37,13 +36,11 @@ class ModelInstanceState:
         self.memory_pool_size = self.init_memory_pool_size
 
     def __str__(self):
-        return (f"Instance {self.instance_idx}: {self.state.name}, gpu_ids: {self.gpu_ids}, "
-                f"model weight Mem: {self.memory_usage.model_weights_memory} GB, "
-                f"activation Mem: {self.memory_usage.memory_pool_memory} GB, "
-                f"memory pool size: {self.memory_pool_size} GB, "
-                f"req to token Mem: {self.memory_usage.req_to_token_pool_memory:.2f} GB, "
-                f"token to kv mem: {self.memory_usage.token_to_kv_pool_memory:.2f} GB, "
-                f"model cell size: {self.cell_size}")
+        total_memory = (self.memory_usage.model_weights_memory + self.memory_usage.memory_pool_memory)
+        return (f"Instance {self.instance_idx}: {self.state.name}, memory usage: {total_memory:.2f} GB, gpu_ids: {self.gpu_ids}, "
+               f"memory_pool_size: {self.memory_pool_size} GB, "
+               f"req to token Mem: {self.memory_usage.req_to_token_pool_memory:.2f} GB, "
+               f"token to kv mem: {self.memory_usage.token_to_kv_pool_memory:.2f} GB")
 
     def on_activate(self, memory_usage: MemoryUsage, gpu_id: Optional[int] = None):
         self.state = ModelState.ACTIVE
@@ -60,10 +57,6 @@ class ModelInstanceState:
         memory_usage.memory_pool_memory += memory_usage.token_to_kv_pool_memory
         memory_usage.total_used_memory += memory_usage.token_to_kv_pool_memory
         self.memory_usage = memory_usage
-        
-    def set_cell_size(self, cell_size: float):
-        if self.cell_size is not None:
-            self.cell_size = cell_size
 
 
 def get_gpu_memory_usage(gpu_id: int) -> float:

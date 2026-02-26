@@ -42,7 +42,7 @@ class ResizeGlobalPolicy(GlobalPolicy):
         self.violation_tracker = RequestViolationTracker(window_size_seconds=3)
 
         self.MEMORY_POOL_BUDGET = 5
-        self.RESIZE_THRESHOLD = 2
+        self.RESIZE_THRESHOLD = 5
 
     def _get_all_gpus(self, model_instance_state_dict: Dict[str, List[ModelInstanceState]]) -> int:
         """获取全部GPU id"""
@@ -243,7 +243,7 @@ class ResizeGlobalPolicy(GlobalPolicy):
                 current_memory_usage = instance.memory_usage.token_to_kv_pool_memory
                 target_memory = min(
                     available_memory * workloads[i] / total_workload,
-                    instance_target_memory.get(key, available_memory)
+                    instance_target_memory.get(key, available_memory), 11
                 )
                 target_memory = max(target_memory, current_memory_usage)
                 logger.info(f"Model {key[0]} Instance{key[1]}, taking workload {workloads[i]} of {total_workload}, "

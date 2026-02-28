@@ -243,7 +243,7 @@ class ResizeGlobalPolicy(GlobalPolicy):
                 current_memory_usage = instance.memory_usage.token_to_kv_pool_memory
                 target_memory = min(
                     available_memory * workloads[i] / total_workload,
-                    instance_target_memory.get(key, available_memory), 11
+                    instance_target_memory.get(key, available_memory), 10
                 )
                 target_memory = max(target_memory, current_memory_usage)
                 logger.info(f"Model {key[0]} Instance{key[1]}, taking workload {workloads[i]} of {total_workload}, "

@@ -79,7 +79,7 @@ cd /sgl-workspace/aeserve-public/benchmark/multi-model
 python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/setup.json --disable-cuda-graph --disable-radix-cache --enable-controller --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy resize-global --log-file ./server.log --async-loading
 
 # AEServe测试，修改config file
-python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/llama_4_gpu_2_model.json --disable-cuda-graph --disable-radix-cache --enable-controller --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy resize-global --log-file ./server.log --async-loading --enable-gpu-scheduler
+python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/llama_4_gpu_2_model.json --disable-cuda-graph --disable-radix-cache --enable-controller --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy resize-global --log-file ./server.log --async-loading --enable-model-scheduler
 
 # Prism测试，修改config file
 python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/llama_4_gpu_2_model_prism.json --disable-cuda-graph --disable-radix-cache --enable-controller --enable-gpu-scheduler --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy baseline --log-file ./server.log --async-loading
@@ -91,7 +91,7 @@ python3 benchmark.py \
   --model-ids 0 1 \
   --num-gpus 4 \
   --workload-scale 1 \
-  --rate-scale 3 \
+  --rate-scale 4 \
   --ttft-slo-scale 10 \
   --tpot-slo-scale 10
 
@@ -107,6 +107,7 @@ python3 benchmark.py \
   --tpot-slo-scale 10
 
 # 消融测试，修改model_scheduler PRIORITY
+
 ```
 
 

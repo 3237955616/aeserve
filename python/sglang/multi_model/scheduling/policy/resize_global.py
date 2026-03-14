@@ -42,7 +42,7 @@ class ResizeGlobalPolicy(GlobalPolicy):
         self.violation_tracker = RequestViolationTracker(window_size_seconds=3)
 
         self.MEMORY_POOL_BUDGET = 5
-        self.RESIZE_THRESHOLD = 5
+        self.RESIZE_THRESHOLD = 2
 
     def _get_all_gpus(self, model_instance_state_dict: Dict[str, List[ModelInstanceState]]) -> int:
         """获取全部GPU id"""
@@ -226,11 +226,10 @@ class ResizeGlobalPolicy(GlobalPolicy):
                 )
                 workloads.append(workload)
                 available_memory += instance.memory_usage.token_to_kv_pool_memory # 假设单实例
-                total_weight_memory += instance.memory_usage.model_weights_memory
+                total_weight_memory += instance.memory_usage.model_weights_memory / len(instance.gpu_ids)
             # 两次显存分配
-            total_workload = sum(workloads)
+            total_workload = sum(workloads) + 1
             available_memory = min(available_memory, self.gpu_mem - total_weight_memory) # 避免分配溢出
-            if total_workload == 0: continue
             # 分配 1
             for i, instance in enumerate(instances): # 避免缩减后运行显存不足导致无效
                 current_memory_usage = instance.memory_usage.token_to_kv_pool_memory
@@ -243,7 +242,7 @@ class ResizeGlobalPolicy(GlobalPolicy):
                 current_memory_usage = instance.memory_usage.token_to_kv_pool_memory
                 target_memory = min(
                     available_memory * workloads[i] / total_workload,
-                    instance_target_memory.get(key, available_memory), 10
+                    instance_target_memory.get(key, available_memory),
                 )
                 target_memory = max(target_memory, current_memory_usage)
                 logger.info(f"Model {key[0]} Instance{key[1]}, taking workload {workloads[i]} of {total_workload}, "

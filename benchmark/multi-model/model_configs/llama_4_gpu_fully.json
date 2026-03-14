@@ -8,7 +8,7 @@
             {
                 "gpu_ids": [0, 1, 2, 3],
                 "on": true,
-                "max_memory_pool_size": 30
+                "max_memory_pool_size": 20
             }
         ]
     }

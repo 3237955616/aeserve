@@ -268,7 +268,7 @@ class MHATokenToKVPool(BaseTokenToKVPool):
         """弹性显存分配"""
         # C++层分配足够大的vaddr空间
         self.k_buffer, self.v_buffer = self.kvcached_ops.sgl_alloc_kv_cache(
-            self.max_alloc_token_num * 20, # 临时设置，保证映射不溢出
+            self.max_alloc_token_num * 4, # 临时设置，保证映射不溢出
             self.head_num,
             self.head_dim,
             self.dtype,

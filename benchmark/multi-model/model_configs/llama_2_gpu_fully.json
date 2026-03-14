@@ -6,9 +6,9 @@
         "tp_size": 2,
         "init_placements": [
             {
-                "gpu_ids": [2, 3],
+                "gpu_ids": [0, 1],
                 "on": true,
-                "max_memory_pool_size": 30
+                "max_memory_pool_size": 20
             }
         ]
     }

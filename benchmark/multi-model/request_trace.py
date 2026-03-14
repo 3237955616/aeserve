@@ -124,7 +124,7 @@ def generate_synthetic_reqs(
                     continue
         req = Request(
             req_id=str(i),
-            prompt=dummy_prompt(input_lens[i]),
+            prompt=dummy_prompt(int(input_lens[i])),
             prompt_len=int(input_lens[i]),
             output_len=int(output_lens[i]),
             arrival_time=timestamps[i],
@@ -176,13 +176,12 @@ class RealWorldTrace:
 
     def generate_real_reqs(self, config: TraceConfig, model_ids: list[int]):
         # 选择LoRA rank
-        all_ranks = [0, 10, 2, 5]
-        selected_ranks = [all_ranks[i] for i in model_ids]
+        all_ranks = [0, 10, 2, 5, 1, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 15]
         model_list = [f"model_{i+1}" for i in range(len(model_ids))]
-        rank_model_mapping = dict(zip(selected_ranks, model_list))
+        rank_model_mapping = dict(zip(all_ranks, model_list)) #| dict(zip(all_ranks[len(model_ids):], model_list))
         # 定义slo
-        ttft_slos = {"model_1": 0.03867427111, "model_2": 0.03222719193, "model_3": 0.03141047955, "model_4": 0.05097425461}
-        tpot_slos = {"model_1": 6.938047111, "model_2": 6.70813661, "model_3": 6.111749992, "model_4": 10.81588957}
+        ttft_slos = {model_name: 0.5 for model_name in model_list}
+        tpot_slos = {model_name: 10 for model_name in model_list}
         model_ttft_slo = {k: v * config.ttft_slo_scale for k, v in ttft_slos.items()}
         model_tpot_slo = {k: v * config.tpot_slo_scale / 1000 for k, v in tpot_slos.items()}
         # 筛选请求

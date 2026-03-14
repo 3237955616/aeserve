@@ -473,6 +473,7 @@ class SingleModelRunner(BaseModelRunner):
             success = self.token_to_kv_pool.kvcached_ops.shutdown_kvcached()
             self.token_to_kv_pool = MHATokenToKVPool(
                 max_total_num_tokens,
+                max_total_num_tokens,
                 dtype=self.kv_cache_dtype,
                 head_num=self.model_config.get_num_kv_heads(self.tp_size),
                 head_dim=self.model_config.head_dim,

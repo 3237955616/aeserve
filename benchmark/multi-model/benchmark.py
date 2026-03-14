@@ -1674,7 +1674,7 @@ async def benchmark_with_timeout(
         return "failed"
 
 
-def run_benchmark(args_: argparse.Namespace, trace_config, requests=None, timeout=60 * 60):
+def run_benchmark(args_: argparse.Namespace, trace_config, requests=None, timeout=120*60):
     global args
     args = args_
     server = args.base_url or f"http://{args.host}:{args.port}"
@@ -1775,7 +1775,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-lst", type=str, default="model_lst.yml")
     parser.add_argument("--num-gpus", type=int, default=1)
     parser.add_argument("--profile", action="store_true")
-    parser.add_argument("--workload-scale", type=float, default=2)
+    parser.add_argument("--workload-scale", type=float, default=1)
     parser.add_argument("--rate-scale", type=int, default=1)
     parser.add_argument("--ttft-slo-scale", type=float, default=5)
     parser.add_argument("--tpot-slo-scale", type=float, default=5)

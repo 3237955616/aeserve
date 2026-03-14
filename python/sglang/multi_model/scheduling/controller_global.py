@@ -17,10 +17,7 @@ import aiohttp
 import torch
 import zmq
 
-from sglang.multi_model.scheduling.policy.baseline import BaselinePolicy
-from sglang.multi_model.scheduling.policy.tp_global import TPGlobalPolicy
 from sglang.multi_model.scheduling.policy.resize_global import ResizeGlobalPolicy
-from sglang.multi_model.scheduling.policy.simple_global import SimpleGlobalPolicy
 from sglang.multi_model.multi_model_server_args import MultiModelServerArgs
 from sglang.multi_model.scheduling.action import BaseAction
 from sglang.multi_model.scheduling.constants import (
@@ -133,34 +130,12 @@ class GlobalController:
                 self.model_weights_info_after_renamed[model_name] = model_weights_info[model_path]
 
         # Initialize scheduling policy
-        if server_args.policy == "simple-global":
-            self.policy = SimpleGlobalPolicy(
-                num_gpus=len(self.gpu_ids),
-                gpu_mem=gpu_mem,
-                model_weights_info=self.model_weights_info_after_renamed,
-                workers_per_gpu=self.server_args.workers_per_gpu,
-            )
-        elif self.server_args.policy == "tp-global":
-            self.policy = TPGlobalPolicy(
-                num_gpus=len(self.gpu_ids),
-                gpu_mem=gpu_mem,
-                model_weights_info=self.model_weights_info_after_renamed,
-                workers_per_gpu=self.server_args.workers_per_gpu if self.enable_worker_pool else -1,
-            )
-        elif self.server_args.policy == "resize-global":
-            self.policy = ResizeGlobalPolicy(
-                num_gpus=len(self.gpu_ids),
-                gpu_mem=gpu_mem,
-                model_weights_info=self.model_weights_info_after_renamed,
-                workers_per_gpu=self.server_args.workers_per_gpu if self.enable_worker_pool else -1,
-            )
-        else:
-            self.policy = BaselinePolicy(
-                num_gpus=len(self.gpu_ids),
-                gpu_mem=gpu_mem,
-                model_weights_info=self.model_weights_info_after_renamed,
-                workers_per_gpu=self.server_args.workers_per_gpu if self.enable_worker_pool else -1,
-            )
+        self.policy = ResizeGlobalPolicy(
+            num_gpus=len(self.gpu_ids),
+            gpu_mem=gpu_mem,
+            model_weights_info=self.model_weights_info_after_renamed,
+            workers_per_gpu=self.server_args.workers_per_gpu if self.enable_worker_pool else -1,
+        )
         logger.info(f"Using policy: {self.policy.__class__.__name__}")
         self._start_run_policy = threading.Event() # waiting for the first generate request
         # background thread to update the queue info
@@ -284,7 +259,7 @@ class GlobalController:
         """Execute a list of scheduling actions in parallel."""
         tic = time.time()
         threads = ThreadPoolExecutor(max_workers=len(actions))
-        futures = [ threads.submit(action.execute, self.server_args.url(), self.model_instance_state_dict) for action in actions]
+        futures = [threads.submit(action.execute, self.server_args.url(), self.model_instance_state_dict) for action in actions]
         # Wait for all actions to complete
         for future in futures:
             try:

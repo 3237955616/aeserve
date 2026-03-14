@@ -1,7 +1,3 @@
-## Install
-
-### Start redis server
-
 Start redis server with docker:
 ```bash
 sudo docker run --name my-redis -p 6379:6379 -d redis
@@ -9,100 +5,56 @@ sudo docker run --name my-redis -p 6379:6379 -d redis
 
 Install redis-py with `pip install redis`.
 
-Test the redis server is running:
+### Download AEServe and kvcached
 ```bash
-sudo docker start my-redis
-```
-```bash
-python3
-import redis
-r = redis.Redis(host='localhost', port=6379, db=0)
-r.set('foo', 'bar')
-r.get('foo')
-```
-
-### Download sglang-mulit-model and kvcached
-```bash
-# install sglang-muli-model
-git clone https://github.com/shanyu-sys/sglang-multi-model.git
+# install AEServe
+git clone https://github.com/LiRongchuan/AEServe.git
 
 # install kvcached
-git clone https://github.com/ovg-project/kvcached.git
+git clone https://github.com/LiRongchuan/kvcached-research.git
 ```
 
-### Start sglang development docker container
-
-1. Start a container running in the background.
 ```bash
 sudo docker run -dit --gpus all --ipc=host --network=host \
-    -v `pwd`/aeserve-public:/sgl-workspace/aeserve-public/ \
-    -v `pwd`/kvcached:/sgl-workspace/kvcached \
-    -v `pwd`/data/lrc/cache/huggingface/:/root/.cache/huggingface \
+    -v `pwd`/aeserve:/sgl-workspace/aeserve/ \
+    -v `pwd`/kvcached-research:/sgl-workspace/kvcached \
     --name aeserve \
     lmsysorg/sglang:v0.3.4.post2-cu121 bash
 ```
 
-2. Login to the container.
 ```bash
-sudo docker start aeserve
-```
-```bash
-sudo docker exec -it aeserve bash
-```
-
-### Install sglang-multi-model and kvcached
-
-```bash
-cd /sgl-workspace/aeserve-public/python
+cd /sgl-workspace/aeserve/python 
 pip install -e .
-# flashinfer has already been installed in the container
-# pip install flashinfer==0.1.6 -i https://flashinfer.ai/whl/cu121/torch2.4/
-
 cd /sgl-workspace/kvcached
 pip install --no-build-isolation -e .
-
 pip install tensordict --upgrade
 pip install redis
 pip install lm_eval
 python3 setup.py clean
 python3 setup.py install
-
-echo 'export HF_ENDPOINT="https://hf-mirror.com"' >> ~/.bashrc
-source ~/.bashrc
-huggingface-cli login
-# Use your token to login
 ```
 ```bash
 cd /sgl-workspace/aeserve-public/benchmark/multi-model
-
-# 运行测试
 python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/setup.json --disable-cuda-graph --disable-radix-cache --enable-controller --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy resize-global --log-file ./server.log --async-loading
-
-# AEServe测试，修改config file
-python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/llama_4_gpu_2_model.json --disable-cuda-graph --disable-radix-cache --enable-controller --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy resize-global --log-file ./server.log --async-loading --enable-model-scheduler
-
-# Prism测试，修改config file
-python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/llama_4_gpu_2_model_prism.json --disable-cuda-graph --disable-radix-cache --enable-controller --enable-gpu-scheduler --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy baseline --log-file ./server.log --async-loading
 
 # Arena-trace测试，修改num-gpus和rate-scale
 python3 benchmark.py \
   --base-url http://127.0.0.1:30000 \
   --real-trace ./real_trace.pkl \
   --model-ids 0 1 \
-  --num-gpus 4 \
+  --num-gpus 2 \
   --workload-scale 1 \
-  --rate-scale 4 \
+  --rate-scale 2 \
   --ttft-slo-scale 10 \
   --tpot-slo-scale 10
 
 # SharedGPT测试，修改num-gpus和rate-scale
+
 python3 benchmark.py \
   --base-url http://127.0.0.1:30000 \
-  --sharedgpt ./sharedgpt/sharedgpt_n3_rate_4.json \
+  --sharedgpt ./sharedgpt/sharedgpt_n3_rate_1.json \
   --model-ids 0 1 \
   --num-gpus 4 \
-  --workload-scale 1 \
-  --rate-scale 1 \
   --ttft-slo-scale 10 \
   --tpot-slo-scale 10
 
@@ -110,153 +62,3 @@ python3 benchmark.py \
 
 ```
 
-
-
-<!-- ## Run multi-model tests
-
-### Single model 
-
-Launch server with model_path:
-```bash
-cd /sgl-workspace/prism-research/benchmark/multi-model
-python3 -m sglang.launch_multi_model_server --port 30000 --disable-cuda-graph --model-config-file ./model_configs/1_gpu_2_model.json --disable-radix-cache --enable-controller --enable-elastic-memory --use-kvcached-v0 --log-file ./server.log --policy resize-global
-```
-
- Options:
-    
-    - `enable-elastic-memory`: enable elastic memory with kvcached. Should not be enabled for now. 
-    - `policy`: The policy for multi-model scheduling.
-    - `enable-controller`: Whether to use multi-model scheduler to switch on/off models.
-    - `log-file`: The server log file path. If specified, the server log will be saved to the file.
-
-Run tests:
-```bash
-python3 benchmark.py -n 1
-```
-
-### Multiple models
-
-Multiple models need to be launched with a model config file.
-
-See [swap_2.json](./model_configs/swap_2.json) and [collocate.json](./model_configs/collocate.json) for examples.
-"init_placements"中每一项代表一个instance
-
-Note that: 
-- The `model_name` should be unique.
-- `max_memory_pool_size` is the maximum memory pool size in GB. It should be set according to the GPU memory size. A utils function `get_memory_pool_size`(../../python/sglang/multi_model/utils/get_memory_pool_size.py) is provided to get the memory pool size.
-- `on` is a boolean value. If `on` is true, the instance's model will be placed on GPU and be ready to serve generation requests. If `on` is False, the instance's model will be initially placed on CPU, and waiting for a later `Activate` request, which will then load the model to GPU and start serving generation requests.
-- For the swapping case, the model with `on` set to false is suggested to be put before the model with `on` set to true in the config file, to avoid running out of GPU memory when initializing the memory pool for the `on` = false models.
-
-Launch server with
-
-```bash
-cd /sgl-workspace/prism-research/benchmark/multi-model
-
-# AEServe测试，修改config file
-python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/llama_1_gpu_2_model.json  --disable-cuda-graph --disable-radix-cache --enable-controller --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy resize-global --log-file ./server.log --async-loading
-
-# Prism测试，修改config file
-python3 -m sglang.launch_multi_model_server --port 30000 --model-config-file ./model_configs/llama_1_gpu_2_model_prism.json  --disable-cuda-graph --disable-radix-cache --enable-controller --enable-gpu-scheduler --enable-cpu-share-memory --enable-elastic-memory --use-kvcached-v0 --policy baseline --log-file ./server.log --async-loading
-
-# Arena-trace测试，修改num-gpus和rate-scale
-python3 benchmark.py \
-  --base-url http://127.0.0.1:30000 \
-  --real-trace ./real_trace.pkl \
-  --model-ids 0 1 \
-  --num-gpus 1 \
-  --workload-scale 1 \
-  --rate-scale 5 \
-  --ttft-slo-scale 10 \
-  --tpot-slo-scale 10
-
-# SharedGPT测试，修改num-gpus和rate-scale
-python3 benchmark.py \
-  --base-url http://127.0.0.1:30000 \
-  --sharedgpt ./sharedgpt/sharedgpt_n3_rate_4.json \
-  --model-ids 0 1 \
-  --num-gpus 4 \
-  --workload-scale 1 \
-  --rate-scale 1 \
-  --ttft-slo-scale 10 \
-  --tpot-slo-scale 10
-```
-
-Options: 
- - `--enable-controller`: Wheterh to use multi-model scheduler to switch on/off models.
- - `max-mem-usage`: Optional. The GPU memory that can be used for model weights and memory pool size, e.g. total GPU memory * 0.85.
-
-Then waiting for the server to be ready, which may take a few minutes, depending on the number of models. All models that are configured to be on will be fired up and ready to roll!å
-
-### Run tests(Arena trace)
-
-First uncomment or write the experiments you want to run in `def test_all(self)` and then run the following command:
-
-For non-tp setting (an example using 8 gpus and 18 models): 
-
-```bash
-python3 -m sglang.launch_multi_model_server \
-  --log-file server-logs/e2e.log\
-  --model-config-file model_configs/8_gpu_18_model_our.json \
-  --enable-cpu-share-memory \
-  --disable-cuda-graph \
-  --disable-radix-cache \
-  --use-kvcached-v0 \
-  --max-mem-usage 67.28 \
-  --port 30333 \
-  --enable-elastic-memory \
-  --enable-gpu-scheduler \
-  --enable-controller \
-  --policy simple-global \
-  --enable-model-service \
-  --enable-worker-pool \
-  --workers-per-gpu 4 \
-  --num-model-service-workers 4 \
-  --num-gpus 8
-```
-
-```bash
-python3 benchmark.py \
-  --base-url http://127.0.0.1:30333 \
-  --real-trace ./real_trace.pkl \
-  --num-models 18 \
-  --num-gpus 8 \
-  --exp-name our_test \
-  --e2e-benchmark \
-  --time-scale 1 \
-  --replication 1
-```
-
-### Run tests(TP)
-
-For tp setting (an example using 4 gpus and 2 models):
-
-Starting the server:
-```bash
-python3 -m sglang.launch_multi_model_server \
-  --model-config-file ./model_configs/4_gpu_2_model.json \
-  --host 127.0.0.1 --port 30000 \
-  --disable-cuda-graph --disable-radix-cache \
-  --log-file server-logs/$(date +%m%d_%H%M)_ours_4_gpu_tp.log \
-  --load-format dummy \
-  --enable-elastic-memory --use-kvcached-v0 \
-  --policy simple-global
-```
-
-Run test:
-```bash
-python3 benchmark.py \
-  --base-url http://127.0.0.1:30000 \
-  --exp-name ours_4_gpu \
-  --num-gpus 4 \
-  --num-models 2 \
-  --model-paths model_1 model_4 \
-  --time-scale 0.5 \
-  --replication 1 \
-  --e2e-benchmark \
-  --real-trace ./real_trace.pkl \
-  --results-path benchmark-results \
-  --request-path output-requests \
-  --seed 42 \
-  --memory-pool-size 16 \
-  --req-rate 20
-```  -->

@@ -54,10 +54,5 @@ These systems provide important design insights for building scalable LLM servin
 
 ---
 
-# License
-This project is released under the MIT License.
-
----
-
 # Acknowledgements
 We thank the open-source community and prior research efforts on large-scale LLM inference systems and GPU resource management.

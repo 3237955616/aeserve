@@ -1,26 +1,13 @@
 [
     {
-        "model_name": "model_1",
-        "model_path": "meta-llama/Llama-3.2-1B",
+        "model_name": "Llama-2-13b-chat-hf",
+        "model_path": "/data/zjy/Llama-2-13b-chat-hf",
         "tp_size": 1,
         "init_placements": [
             {
-                "gpu_ids": [3],
+                "gpu_ids": [0],
                 "on": true,
-                "max_memory_pool_size": 5,
-                "enable_mixed_chunk": true
-            }
-        ]
-    },
-    {
-        "model_name": "model_2",
-        "model_path": "meta-llama/Llama-3.2-1B",
-        "tp_size": 1,
-        "init_placements": [
-            {
-                "gpu_ids": [3],
-                "on": true,
-                "max_memory_pool_size": 5,
+                "max_memory_pool_size": 6,
                 "enable_mixed_chunk": true
             }
         ]

@@ -19,6 +19,7 @@ import aiohttp
 import numpy as np
 import tqdm
 from tqdm.asyncio import tqdm
+from pathlib import Path
 
 AIOHTTP_TIMEOUT = aiohttp.ClientTimeout(total=6 * 60 * 60)
 
@@ -1673,6 +1674,37 @@ async def benchmark_with_timeout(
         print("Benchmark timed out. Please increase the timeout.")
         return "failed"
 
+def load_requests_from_task_file(task_file, default_model):
+    requests = []
+    with open(task_file, "r", encoding="utf-8") as fin:
+        for i, line in enumerate(fin):
+            line = line.strip()
+            if not line:
+                continue
+            obj = json.loads(line)
+
+            prompt = obj["prompt"]
+            prompt_len = int(obj.get("prompt_len", len(prompt.split())))
+            output_len = int(obj.get("output_len", 128))
+            arrival_time = float(obj.get("arrival_time", i))
+            model = obj.get("model", default_model)
+            slo_ttft = float(obj.get("slo_ttft", 5))
+            slo_tpot = float(obj.get("slo_tpot", 0.05))
+
+            requests.append(
+                Request(
+                    req_id=i,
+                    prompt=prompt,
+                    prompt_len=prompt_len,
+                    output_len=output_len,
+                    arrival_time=arrival_time,
+                    model=model,
+                    slo_ttft=slo_ttft,
+                    slo_tpot=slo_tpot,
+                )
+            )
+    return requests
+
 
 def run_benchmark(args_: argparse.Namespace, trace_config, requests=None, timeout=120*60):
     global args
@@ -1780,8 +1812,24 @@ if __name__ == "__main__":
     parser.add_argument("--ttft-slo-scale", type=float, default=5)
     parser.add_argument("--tpot-slo-scale", type=float, default=5)
     parser.add_argument("--mmy-debug", action="store_true")
+    parser.add_argument("--task-file", type=str, default=None, help="Path to a jsonl task file.")
     args = parser.parse_args()
-    if args.real_trace:
+    if args.task_file:
+        print(f"Using task file: {args.task_file}")
+        model_paths = args.model_paths if args.model_paths is not None else [f"model_{i+1}" for i in range(args.num_models)]
+        config = TraceConfig(
+            model_paths=model_paths,
+            ttft_slo_scale=args.ttft_slo_scale,
+            tpot_slo_scale=args.tpot_slo_scale,
+            slo=300,
+            micro_benchmark=args.micro_benchmark,
+            e2e_benchmark=args.e2e_benchmark,
+            time_scale=args.time_scale,
+            replication=args.replication,
+        )
+        requests = load_requests_from_task_file(args.task_file, model_paths[0])
+        run_benchmark(args, config, requests)
+    elif args.real_trace:
         print(f"Real trace file: {args.real_trace}")
         if args.model_paths is not None:
             config = TraceConfig(

@@ -1,25 +1,25 @@
 {
-    "meta-llama/Llama-2-13b-chat-hf": {
+    "/data/zjy/Llama-2-13b-chat-hf": {
         "model_size": 24.376953125,
         "cell_size": 819200
     },
-    "meta-llama/Llama-2-13b-hf": {
+    "/data/zjy/Llama-2-13b-hf": {
         "model_size": 24.376953125,
         "cell_size": 819200
     },
-    "microsoft/Phi-3-mini-4k-instruct": {
+    "/data/zjy/Phi-3-mini-4k-instruct": {
         "model_size": 7.12109375,
         "cell_size": 393216
     },
-    "microsoft/Phi-3-mini-128k-instruct": {
+    "/data/zjy/Phi-3-mini-128k-instruct": {
         "model_size": 7.19140625,
         "cell_size": 393216
     },
-    "microsoft/Phi-3.5-mini-instruct": {
+    "/data/zjy//Phi-3.5-mini-instruct": {
         "model_size": 7.169921875,
         "cell_size": 393216
     },
-    "microsoft/phi-2": {
+    "/data/zjy/phi-2": {
         "model_size": 5.212890625,
         "cell_size": 327680
     },
@@ -40,6 +40,10 @@
         "cell_size": 30720
     },
     "meta-llama/Llama-3.2-1B": {
+        "model_size": 2.279296875,
+        "cell_size": 32768
+    },
+    "/data/zjy/Llama-3.2-1B": {
         "model_size": 2.279296875,
         "cell_size": 32768
     },

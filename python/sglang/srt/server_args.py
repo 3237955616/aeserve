@@ -865,7 +865,7 @@ class ServerArgs:
         args.tp_size = args.tensor_parallel_size
         args.dp_size = args.data_parallel_size
         attrs = [attr.name for attr in dataclasses.fields(cls)]
-        return cls(**{attr: getattr(args, attr) for attr in attrs})
+        return cls(**{attr: getattr(args, attr, None) for attr in attrs})
 
     def url(self):
         if is_ipv6(self.host):

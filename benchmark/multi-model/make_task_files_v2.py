@@ -5,7 +5,7 @@ from pathlib import Path
 OUT_DIR = Path("/sgl-workspace/aeserve/benchmark/multi-model/tasks_v2")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL = "Llama-3.2-1B-Instruct"
+MODEL = "Mistral-Nemo-Instruct-2407"
 SEED = 42
 random.seed(SEED)
 

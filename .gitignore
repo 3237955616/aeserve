@@ -182,7 +182,6 @@ tmp*.txt
 
 # personnal
 work_dirs/
-*.csv
 *.tsv
 benchmark/multi-model/benchmark/
 benchmark/multi-model/benchmark-results/
@@ -191,3 +190,4 @@ benchmark/multi-model/tasks/
 benchmark/multi-model/tasks_v2/
 benchmark/multi-model/results_archive/
 benchmark/multi-model/*.log
+benchmark/multi-model/baseline_model_outputs/
